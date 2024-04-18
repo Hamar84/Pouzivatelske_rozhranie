@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Firebase Data Display</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+
+    <script>
+        
+        const firebaseConfig = {
+          apiKey: "AIzaSyCxC2BmhyMVowBygZ8Boav0HZJjZ9SkCp8",
+          authDomain: "gsrsenzor.firebaseapp.com",
+          databaseURL: "https://gsrsenzor-default-rtdb.firebaseio.com",
+          projectId: "gsrsenzor",
+          storageBucket: "gsrsenzor.appspot.com",
+          messagingSenderId: "951884137942",
+          appId: "1:951884137942:web:89cd9eab8b39ae1bee5077",
+          measurementId: "G-YYDV2BSTEC"
+        };
+
+        
+        firebase.initializeApp(firebaseConfig);
+        
+
+        function downloadData() {
+            var database = firebase.database();
+            var ulozenie = database.ref();
+            ulozenie.once('value', function(snapshot) {
+                var json = snapshot.val();
+                var yaml = jsyaml.dump(json);
+                var blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8;' });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'firebase_data.yaml';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+        }
+
+        var gsravarage = firebase.database().ref("GSRData/gsr_avarage");
+
+        
+        gsravarage.on('value', function(snapshot) {
+            var data = snapshot.val();
+            document.getElementById('GSR').innerText = "Aktuálna priemerná hodnota GSR: " + JSON.stringify(data, null, 2);
+        });     
+        
+        var currenthr = firebase.database().ref("heart_rate_data/current");
+
+        
+        
+        currenthr.on('value', function(snapshot) {
+            var data = snapshot.val();
+            document.getElementById('currenthr').innerText = "Aktuálna srdcová frekvencia: " + JSON.stringify(data, null, 2);
+        });   
+
+        var gsrdata = firebase.database().ref('GSRData/data');
+
+        
+        
+        gsrdata.on('value', function(snapshot) {
+            var data = snapshot.val();
+            document.getElementById('GSRdata').innerText = "Namerané údaje zo snímača GSR: " + JSON.stringify(data, null, 2);
+        });    
+        
+        function toggleGsrData() {
+            var x = document.getElementById("GSRdata");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
+        }
+
+        function togglelocationsData() {
+            var x = document.getElementById("locations");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
+        }
+    
+
+        var maxheartrate = firebase.database().ref('heart_rate_data/max');
+
+        
+        
+        maxheartrate.on('value', function(snapshot) {
+            var data = snapshot.val();
+            document.getElementById('maxHR').innerText = "Maximálna srdcová frekvencia: " + JSON.stringify(data, null, 2);
+        });
+
+        var minheartrate = firebase.database().ref('heart_rate_data/min');
+
+        
+        
+        minheartrate.on('value', function(snapshot) {
+            var data = snapshot.val();
+            document.getElementById('minHR').innerText = "Minimálna srdcová frekvencia: " + JSON.stringify(data, null, 2);
+        });
+
+        var currentlocation = firebase.database().ref('CurrentLocation').limitToLast(1);
+
+        currentlocation.on('value', function(snapshot) {
+            var data = snapshot.val();
+            
+            if (data) {
+                
+                var lastValue = Object.values(data)[0];
+                document.getElementById('currentLoc').innerText = "Aktuálna poloha " + JSON.stringify(lastValue, null, 2);
+            }
+        });
+
+
+        var heartratedata = firebase.database().ref('heart_rate_data/records');
+
+        
+        heartratedata.on('value', function(snapshot) {
+            var data = snapshot.val();
+            var formattedData = "Údaje o srdcovej frekvencii:<br>";
+            
+            if (data && Array.isArray(data)) {
+            
+            data.forEach(function(record) {
+            
+            formattedData += `"Srdcová frekvencia": ${record.heartRate}, "Časová pečiatka": "${record.timestamp}"<br>`;
+        });
+        } else {
+            formattedData += "Nie sú k dispozícii žiadne údaje";
+        }
+
+        document.getElementById('hrdata').innerHTML = formattedData;
+        });
+
+        var locations = firebase.database().ref('CurrentLocation');
+
+        locations.on('value', function(snapshot) {
+            var data = snapshot.val();
+            var formattedData = "Namerané údaje z GPS:<br>";
+            
+            if (data) {
+            
+                Object.keys(data).forEach(function(key) {
+                    var currentLocation = data[key];
+                    formattedData += `"Zemepisná šírka:" ${currentLocation.latitude}, "Zemepisná dĺžka: "${currentLocation.longitude}, "časová pečiatka: " ${currentLocation.timestamp}<br>`;
+        });
+        } else {
+            formattedData += "Nie sú k dispozícii žiadne údaje";
+        }
+
+        document.getElementById('locations').innerHTML = formattedData;
+        });
+
+        function toggleHRData() {
+            var x = document.getElementById("hrdata");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } else {
+                x.style.display = "none";
+            }
+        }
+
+        var maxgsrvalue = firebase.database().ref('GSRData/max_gsr_value');
+
+        
+        maxgsrvalue.on('value', function(snapshot) {
+            var data = snapshot.val();
+            document.getElementById('maxgsr').innerText = "Maximálna hodnota GSR : " + JSON.stringify(data, null, 2);
+        });
+
+        var mingsrvalue = firebase.database().ref('GSRData/min_gsr_value');
+
+        
+        mingsrvalue.on('value', function(snapshot) {
+            var data = snapshot.val();
+            document.getElementById('mingsr').innerText = "Minimálna hodnota GSR: " + JSON.stringify(data, null, 2);
+        });
+
+        window.onload = function() {
+        document.getElementById("GSRdata").style.display = "none";
+        document.getElementById("hrdata").style.display = "none"; 
+        document.getElementById('locations').style.display = "none";
+
+        currenthr.on('value', function(snapshot) {
+            var heartRate = snapshot.val();
+            var trafficLightImage = document.getElementById('trafficLight');
+        
+            if (heartRate >= 110) {
+                trafficLightImage.src = "red.png"; 
+            } else {
+                trafficLightImage.src = "green.png"; 
+            }
+        });
+    
+        
+    };
+
+    
+    var dataGSR = firebase.database().ref('GSRData/data');
+
+    dataGSR.once('value', function(snapshot) {
+        var data = snapshot.val();
+
+        var labels = Object.keys(data);
+        var values = Object.values(data);
+
+        var ctx = document.getElementById('Gsrcanvas').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Gsr údaje',
+                    data: values,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            
+        });
+    });
+
+
+    var dataHR = firebase.database().ref('heart_rate_data/records');
+
+    dataHR.once('value', function(snapshot) {
+        var data = snapshot.val();
+
+        var labels = [];
+        var values = [];
+
+        for (var record in data) {
+        labels.push(data[record].timestamp);
+        values.push(data[record].heartRate);
+    }
+
+        var ctx = document.getElementById('Hrcanvas').getContext('2d');
+        var myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Srdcový tep',
+                    data: values,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+        });
+    });
+
+    
+
+
+    </script>
+    <style>
+        
+        #GSR {
+            margin-top: 20px;
+            padding: 20px;
+            width: fit-content;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        #GSRdata {
+            margin-top: 20px;
+            padding: 20px;
+            width: fit-content;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        #maxHR {
+            margin-top: 20px;
+            padding: 20px;
+            width: fit-content;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        #minHR {
+            margin-top: 20px;
+            padding: 20px;
+            width: fit-content;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        #hrdata {
+            margin-top: 20px;
+            padding: 20px;
+            width: fit-content;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+            color: #666;
+        }
+        #currenthr {
+            margin-top: 20px;
+            padding: 20px;
+            width: fit-content;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+            color: #666;
+        }
+        #maxgsr {
+            margin-top: 20px;
+            padding: 20px;
+            width: fit-content;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+            color: #666;
+        }
+        #mingsr {
+            margin-top: 20px;
+            padding: 20px;
+            width: fit-content;
+            border-radius: 8px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.1em;
+            color: #666;
+        }
+        
+
+        #currentLoc {
+            margin-top: 20px;
+            border-radius: 8px;
+            width: fit-content;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 1.3em;
+            color: #666;
+        }
+        
+
+        .button {
+            background-color: #04AA6D;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            -webkit-transition-duration: 0.4s;
+            transition-duration: 0.4s;
+        }
+
+
+        .button2:hover {
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+        }
+
+        .content-container {
+            position: relative;
+        }
+
+        .details-container {
+            display: none; 
+            position: absolute;
+            top: -30%; 
+            left: 25%;
+            width: 10%; 
+            z-index: 1000; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            border-radius: 8px;
+            margin-top: 10px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .details-container2 {
+            display: none; 
+            position: absolute;
+            top: -80px; 
+            left: 42%;
+            width: 10%; 
+            z-index: 1000; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: #fff;
+            border-radius: 8px;
+            margin-top: 10px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .details-container3 {
+             
+            position: absolute;
+            top: -550px;
+            left: 75%;
+            width: 10%; 
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            
+            border-radius: 8px;
+            margin-top: 10px;
+            padding: 20px;
+            
+        }
+        .details-container4 {
+             
+             position: absolute;
+             top: 100%;
+             left: 72%;
+             width: 450px; 
+             z-index: 1000;
+             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+             
+             border-radius: 8px;
+             margin-top: 10px;
+             padding: 20px;
+             
+             
+         }
+
+         #Gsrcanvas {
+            margin-top: 50px;
+            margin-left: 150px;
+            max-width: 1000px;
+            max-height: 600px;
+        }   
+
+        #Hrcanvas {
+            margin-top: 50px;
+            margin-left: 120px;
+            max-width: 1000px; 
+            max-height: 600px;
+        }   
+
+    </style>
+</head>
+<body>
+    <h1>Zobrazenie údajov Firebase</h1>
+    <div class="content-container">
+        <button onclick="toggleGsrData()" class="button button2">Namerané údaje zo snímača GSR</button>
+        <div id="GSRdata" class="details-container">
+        </div>
+    </div>
+    <div class="content-container">
+        <button onclick="toggleHRData()" class="button button2">Údaje o srdcovej frekvencii</button>
+        <div id="hrdata" class="details-container2">
+        </div>
+    <div id="GSR"></div>
+    <div id="maxgsr"></div>
+    <div id="mingsr"></div>
+
+    <div id="currenthr"></div>
+    <div id="maxHR"></div>
+
+    <div id="minHR"></div>
+
+    <div class="content-container">
+        <button onclick="togglelocationsData()" class="button button2">GPS údaje</button>
+        <div id="locations" class="details-container4">
+        </div>
+    </div>
+
+    <div id="currentLoc"></div>
+    <div id="locations"></div>
+    <div class="content-container">
+        <img id="trafficLight" src="green.png" alt="status" class="details-container3">
+    </div>
+
+    <div style="width: 100%; height: 80%;">
+        <h2 style="margin-left: 460px;">Zmeny hodnôt GSR v priebehu času</h2>
+        <canvas id="Gsrcanvas"></canvas>
+    </div>
+    <div style="width: 100%; height: 80%;">
+        <h2 style="margin-left: 360px;">Zmeny hodnôt srdcovej frekvencie v priebehu času</h2>
+        <canvas id="Hrcanvas"></canvas>
+    </div>
+    <button onclick="downloadData()" class="button button2" style="margin-left: 10%;">Stiahnutie údajov</button>
+</body>
+</html>
